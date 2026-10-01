@@ -1178,13 +1178,13 @@ func (p *Parser) convertOutbound(raw json.RawMessage, index int, originalData ma
 
 	pc := &models.ProxyConfig{
 		Index:         index,
-		Name:          baseOutbound.SendThrough,
+		Name:          baseOutbound.Tag,
 		Protocol:      baseOutbound.Protocol,
 		MetricsLabels: sanitizeMetricsLabels(baseOutbound.MetricsLabels),
 	}
 
 	if pc.Name == "" {
-		pc.Name = baseOutbound.Tag
+		pc.Name = baseOutbound.SendThrough
 	}
 
 	// WireGuard outbounds have a distinct settings shape (secretKey/address/peers)

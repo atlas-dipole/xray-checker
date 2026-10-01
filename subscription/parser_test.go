@@ -298,6 +298,29 @@ func TestConvertOutboundJSON_WireGuardAndSocksHttp(t *testing.T) {
 	}
 }
 
+func TestConvertOutboundJSON_NamePrefersTag(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		fields string
+		want   string
+	}{
+		{"tag before sendThrough", `"tag":"DE4","sendThrough":"192.0.2.1",`, "DE4"},
+		{"tag only", `"tag":"DE4",`, "DE4"},
+		{"sendThrough fallback", `"sendThrough":"legacy-name",`, "legacy-name"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			raw := []byte(`{` + tc.fields + `"protocol":"http","settings":{"address":"example.com","port":8080}}`)
+			pc, err := NewParser().convertOutbound(raw, 0, nil)
+			if err != nil || pc == nil {
+				t.Fatalf("convert failed: %v", err)
+			}
+			if pc.Name != tc.want {
+				t.Fatalf("expected name %q, got %q", tc.want, pc.Name)
+			}
+		})
+	}
+}
+
 func TestConvertOutboundJSON_MetricsLabels(t *testing.T) {
 	p := NewParser()
 
