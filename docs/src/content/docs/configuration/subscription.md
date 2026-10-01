@@ -291,6 +291,38 @@ Notes:
 - Labels are a JSON-subscription feature only — share links (`vless://`, …) have nowhere to carry them.
 - Changing a label and updating the subscription applies on the next refresh **without resetting other proxies' series to 0**. See [`metricsLabels` on metrics](/integrations/metrics#custom-labels).
 
+### 10. Configuration from an Installed remnanode
+
+Use the remnanode Docker container's name or ID as a source:
+
+```bash
+xray-checker --subscription-url remnanode://remnanode
+```
+
+Checker runs `docker exec remnanode cli --dump-config-raw` each time the source is loaded and extracts proxy outbounds from the JSON. The host needs Docker CLI, and the Checker user must have access to Docker. The command timeout is 30 seconds.
+
+Read the complete saved command output without manually removing CLI messages:
+
+```bash
+docker exec remnanode cli --dump-config-raw > config.txt
+xray-checker --subscription-url file:///absolute/path/config.txt
+```
+
+To run Checker itself in Docker, mount the host socket and add a supplementary group matching the socket GID (Linux example):
+
+```bash
+docker run -d --name xray-checker \
+  -p 2112:2112 \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  --group-add "$(stat -c '%g' /var/run/docker.sock)" \
+  -e SUBSCRIPTION_URL=remnanode://remnanode \
+  kutovoys/xray-checker:latest
+```
+
+Docker CLI is included in the Checker image. Socket access permits control of the host Docker daemon. Saved dumps do not require the socket: mount the file and specify its container path using `file://`.
+
+Both sources use `SUBSCRIPTION_UPDATE` (default `true`) and `SUBSCRIPTION_UPDATE_INTERVAL` (default `300` seconds). Updates reread the file or rerun the command. Combine sources by repeating `--subscription-url`. Proxies are checked individually, as with regular JSON configs.
+
 ## Custom Request Headers
 
 Panels that gate the subscription behind a token or a specific client can be satisfied with a custom `User-Agent` and arbitrary headers:

@@ -17,6 +17,7 @@ URL, Base64 string or file path for proxy configuration. Supports multiple forma
 - Direct Base64 encoded string
 - Local file path with prefix `file://`
 - Local folder path with prefix `folder://`
+- remnanode Docker container with prefix `remnanode://` (for example, `remnanode://remnanode`)
 
 :::tip[Multiple Subscriptions]
 You can specify multiple subscription sources:

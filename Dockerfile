@@ -34,7 +34,7 @@ ARG REPOSITORY_NAME=xray-checker
 
 LABEL org.opencontainers.image.source=https://github.com/${USERNAME}/${REPOSITORY_NAME}
 
-RUN apk add --no-cache ca-certificates curl tzdata && \
+RUN apk add --no-cache ca-certificates curl tzdata docker-cli && \
     adduser -D -u 1000 appuser && \
     mkdir -p /app/geo && \
     chown -R appuser:appuser /app

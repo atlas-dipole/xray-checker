@@ -2,10 +2,59 @@ package subscription
 
 import (
 	"encoding/base64"
+	"os"
+	"path/filepath"
+	"reflect"
 	"testing"
 
 	"xray-checker/models"
 )
+
+func TestParseRemnanodeDumpFile(t *testing.T) {
+	dump, err := os.ReadFile("testdata/remnanode-dump.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cleaned, err := extractConfigDump(dump, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parser := NewParser()
+	want, err := parser.Parse(string(cleaned))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(want.Configs) != 15 {
+		t.Fatalf("expected 15 proxy outbounds, got %d", len(want.Configs))
+	}
+	installTestDocker(t, "cat \"$REMNANODE_TEST_OUTPUT\"\n")
+	fixturePath, err := filepath.Abs("testdata/remnanode-dump.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("REMNANODE_TEST_OUTPUT", fixturePath)
+	live, err := parser.Parse("remnanode://node")
+	if err != nil || !reflect.DeepEqual(live, want) {
+		t.Fatalf("remnanode parsing differs from clean JSON: err %v", err)
+	}
+	path := filepath.Join(t.TempDir(), "config.txt")
+	for _, data := range [][]byte{dump, cleaned} {
+		if err := os.WriteFile(path, data, 0600); err != nil {
+			t.Fatal(err)
+		}
+		got, err := parser.Parse("file://" + path)
+		if err != nil || !reflect.DeepEqual(got, want) {
+			t.Fatalf("file parsing differs from clean JSON: err %v", err)
+		}
+	}
+	if err := os.WriteFile(path, []byte(`{"outbounds":[{"protocol":"http","tag":"replacement","settings":{"address":"updated.example.com","port":8080}}]}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	got, err := parser.Parse("file://" + path)
+	if err != nil || len(got.Configs) != 1 || got.Configs[0].Server != "updated.example.com" {
+		t.Fatalf("file was not reloaded: got %+v, err %v", got, err)
+	}
+}
 
 func node(name, server string, port int) *models.ProxyConfig {
 	return &models.ProxyConfig{Name: name, Server: server, Port: port, Protocol: "vless"}

@@ -1,6 +1,7 @@
 package subscription
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -247,6 +248,13 @@ func (p *Parser) Parse(subscriptionData string) (*ParseResult, error) {
 	var err error
 
 	switch sourceType {
+	case "remnanode":
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		rawData, err = readRemnanodeConfig(ctx, subscriptionData)
+		if err != nil {
+			return nil, err
+		}
 	case "url":
 		result, fetchErr := p.fetchURLContent(subscriptionData)
 		if fetchErr != nil {
@@ -266,6 +274,10 @@ func (p *Parser) Parse(subscriptionData string) (*ParseResult, error) {
 		rawData, err = os.ReadFile(filePath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read file: %v", err)
+		}
+		rawData, err = extractConfigDump(rawData, false)
+		if err != nil {
+			return nil, err
 		}
 	case "base64":
 		rawData = []byte(strings.TrimPrefix(subscriptionData, "base64://"))
@@ -840,6 +852,9 @@ func (p *Parser) cleanEmptyLines(data []byte) []byte {
 }
 
 func (p *Parser) detectSourceType(source string) string {
+	if strings.HasPrefix(source, "remnanode://") {
+		return "remnanode"
+	}
 	if strings.HasPrefix(source, "http://") || strings.HasPrefix(source, "https://") {
 		return "url"
 	}

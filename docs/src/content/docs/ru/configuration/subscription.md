@@ -291,6 +291,38 @@ xray_proxy_status{protocol="trojan",address="1.1.1.1:443",name="proxy",...,locat
 - Лейблы доступны только в JSON-подписках — в share-ссылках (`vless://`, …) их негде передать.
 - Изменение лейбла и обновление подписки применяются при следующем обновлении **без сброса серий других прокси в 0**. См. [`metricsLabels` на метриках](/ru/integrations/metrics#кастомные-лейблы).
 
+### 10. Конфигурация установленной remnanode
+
+Укажите имя или ID Docker-контейнера remnanode как источник:
+
+```bash
+xray-checker --subscription-url remnanode://remnanode
+```
+
+Checker выполняет `docker exec remnanode cli --dump-config-raw` при каждой загрузке источника и извлекает прокси-outbound’ы из JSON. На хосте нужны Docker CLI и доступ пользователя Checker к Docker. Таймаут команды — 30 секунд.
+
+Полный сохранённый вывод команды можно читать без удаления служебных сообщений:
+
+```bash
+docker exec remnanode cli --dump-config-raw > config.txt
+xray-checker --subscription-url file:///absolute/path/config.txt
+```
+
+Для запуска самого Checker в Docker подключите сокет хоста и дополнительную группу по GID сокета (пример для Linux):
+
+```bash
+docker run -d --name xray-checker \
+  -p 2112:2112 \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  --group-add "$(stat -c '%g' /var/run/docker.sock)" \
+  -e SUBSCRIPTION_URL=remnanode://remnanode \
+  kutovoys/xray-checker:latest
+```
+
+Docker CLI входит в образ Checker. Доступ к сокету позволяет управлять Docker хоста. Для сохранённого дампа сокет не нужен: подключите файл в контейнер и укажите его путь с `file://`.
+
+Оба способа используют `SUBSCRIPTION_UPDATE` (по умолчанию `true`) и `SUBSCRIPTION_UPDATE_INTERVAL` (по умолчанию `300` секунд). При обновлении файл перечитывается, а команда выполняется заново. С другими источниками можно комбинировать через повторение `--subscription-url`. Прокси проверяются отдельно, как при чтении обычного JSON.
+
 ## Кастомные заголовки запросов
 
 Панели, закрывающие подписку токеном или ожидающие определённого клиента, можно удовлетворить с помощью кастомного `User-Agent` и произвольных заголовков:

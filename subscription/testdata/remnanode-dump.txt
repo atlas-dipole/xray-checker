@@ -1,0 +1,444 @@
+◐ Dumping cold XRay configuration...
+✔ Configuration retrieved successfully!
+
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "routing": {
+    "rules": []
+  },
+  "inbounds": [
+    {
+      "tag": "unused",
+      "protocol": "vless",
+      "port": 443,
+      "settings": {
+        "clients": []
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "node-0",
+      "protocol": "freedom"
+    },
+    {
+      "tag": "node-1",
+      "protocol": "blackhole"
+    },
+    {
+      "tag": "node-2",
+      "protocol": "freedom"
+    },
+    {
+      "tag": "node-3",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "node-3.example.com",
+            "port": 443,
+            "users": [
+              {
+                "id": "11111111-1111-4111-8111-111111111111",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "publicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "serverName": "example.com",
+          "fingerprint": "chrome",
+          "shortId": "abcd"
+        }
+      }
+    },
+    {
+      "tag": "node-4",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "node-4.example.com",
+            "port": 443,
+            "users": [
+              {
+                "id": "11111111-1111-4111-8111-111111111111",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "publicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "serverName": "example.com",
+          "fingerprint": "chrome",
+          "shortId": "abcd"
+        }
+      }
+    },
+    {
+      "tag": "node-5",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "node-5.example.com",
+            "port": 443,
+            "users": [
+              {
+                "id": "11111111-1111-4111-8111-111111111111",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "publicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "serverName": "example.com",
+          "fingerprint": "chrome",
+          "shortId": "abcd"
+        }
+      }
+    },
+    {
+      "tag": "node-6",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "node-6.example.com",
+            "port": 443,
+            "users": [
+              {
+                "id": "11111111-1111-4111-8111-111111111111",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "publicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "serverName": "example.com",
+          "fingerprint": "chrome",
+          "shortId": "abcd"
+        }
+      }
+    },
+    {
+      "tag": "node-7",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "node-7.example.com",
+            "port": 443,
+            "users": [
+              {
+                "id": "11111111-1111-4111-8111-111111111111",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "publicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "serverName": "example.com",
+          "fingerprint": "chrome",
+          "shortId": "abcd"
+        }
+      }
+    },
+    {
+      "tag": "node-8",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "node-8.example.com",
+            "port": 443,
+            "users": [
+              {
+                "id": "11111111-1111-4111-8111-111111111111",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "publicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "serverName": "example.com",
+          "fingerprint": "chrome",
+          "shortId": "abcd"
+        }
+      }
+    },
+    {
+      "tag": "node-9",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "node-9.example.com",
+            "port": 443,
+            "users": [
+              {
+                "id": "11111111-1111-4111-8111-111111111111",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "publicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "serverName": "example.com",
+          "fingerprint": "chrome",
+          "shortId": "abcd"
+        }
+      }
+    },
+    {
+      "tag": "node-10",
+      "protocol": "shadowsocks",
+      "settings": {
+        "servers": [
+          {
+            "address": "node-10.example.com",
+            "port": 8443,
+            "method": "aes-128-gcm",
+            "password": "test-password"
+          }
+        ]
+      }
+    },
+    {
+      "tag": "node-11",
+      "protocol": "shadowsocks",
+      "settings": {
+        "servers": [
+          {
+            "address": "node-11.example.com",
+            "port": 8443,
+            "method": "aes-128-gcm",
+            "password": "test-password"
+          }
+        ]
+      }
+    },
+    {
+      "tag": "node-12",
+      "protocol": "vless",
+      "settings": {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "encryption": "none",
+        "address": "node-12.example.com",
+        "port": 443
+      },
+      "streamSettings": {
+        "network": "raw",
+        "security": "reality",
+        "realitySettings": {
+          "password": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "serverName": "example.com",
+          "fingerprint": "chrome",
+          "shortId": "abcd"
+        }
+      }
+    },
+    {
+      "tag": "node-13",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "node-13.example.com",
+            "port": 443,
+            "users": [
+              {
+                "id": "11111111-1111-4111-8111-111111111111",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "raw",
+        "security": "reality",
+        "realitySettings": {
+          "publicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "serverName": "example.com",
+          "fingerprint": "chrome",
+          "shortId": "abcd"
+        }
+      }
+    },
+    {
+      "tag": "node-14",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "node-14.example.com",
+            "port": 443,
+            "users": [
+              {
+                "id": "11111111-1111-4111-8111-111111111111",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "example.com",
+          "fingerprint": "chrome"
+        },
+        "xhttpSettings": {
+          "host": "example.com",
+          "path": "/test/{path}",
+          "mode": "auto",
+          "extra": {
+            "xmux": {
+              "maxConcurrency": 16
+            }
+          }
+        }
+      }
+    },
+    {
+      "tag": "node-15",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "node-15.example.com",
+            "port": 443,
+            "users": [
+              {
+                "id": "11111111-1111-4111-8111-111111111111",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "example.com",
+          "fingerprint": "chrome"
+        },
+        "xhttpSettings": {
+          "host": "example.com",
+          "path": "/test/{path}",
+          "mode": "auto",
+          "extra": {
+            "xmux": {
+              "maxConcurrency": 16
+            }
+          }
+        }
+      }
+    },
+    {
+      "tag": "node-16",
+      "protocol": "blackhole"
+    },
+    {
+      "tag": "node-17",
+      "protocol": "vless",
+      "settings": {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "encryption": "none",
+        "address": "node-17.example.com",
+        "port": 443
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "example.com",
+          "fingerprint": "chrome"
+        },
+        "xhttpSettings": {
+          "host": "example.com",
+          "path": "/test/{path}",
+          "mode": "auto",
+          "extra": {
+            "xmux": {
+              "maxConcurrency": 16
+            }
+          }
+        }
+      }
+    },
+    {
+      "tag": "node-18",
+      "protocol": "vless",
+      "settings": {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "encryption": "none",
+        "address": "node-18.example.com",
+        "port": 443
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "example.com",
+          "fingerprint": "chrome"
+        },
+        "xhttpSettings": {
+          "host": "example.com",
+          "path": "/test/{path}",
+          "mode": "auto",
+          "extra": {
+            "xmux": {
+              "maxConcurrency": 16
+            }
+          }
+        }
+      }
+    },
+    {
+      "tag": "node-19",
+      "protocol": "blackhole"
+    }
+  ]
+}
+✔ Configuration dumped successfully!
