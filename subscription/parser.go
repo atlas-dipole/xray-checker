@@ -103,6 +103,7 @@ type libXrayRealitySettings struct {
 	ServerName  string `json:"serverName"`
 	Fingerprint string `json:"fingerprint"`
 	PublicKey   string `json:"publicKey"`
+	Password    string `json:"password"`
 	ShortId     string `json:"shortId"`
 }
 
@@ -1307,6 +1308,10 @@ func (p *Parser) convertOutbound(raw json.RawMessage, index int, originalData ma
 			pc.SNI = ss.RealitySettings.ServerName
 			pc.Fingerprint = ss.RealitySettings.Fingerprint
 			pc.PublicKey = ss.RealitySettings.PublicKey
+			// Match Xray's REALITY alias precedence while accepting legacy configs.
+			if ss.RealitySettings.Password != "" {
+				pc.PublicKey = ss.RealitySettings.Password
+			}
 			pc.ShortID = ss.RealitySettings.ShortId
 		}
 

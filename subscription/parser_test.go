@@ -2,13 +2,65 @@ package subscription
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
 
 	"xray-checker/models"
+	"xray-checker/xray"
 )
+
+func TestParseRealityKeyAliases(t *testing.T) {
+	const key = "jnsDTya4elAlV-czGFJbvOHJFdXWn7MGGwmKzZ_hoTQ"
+	for _, tc := range []struct {
+		name     string
+		settings map[string]string
+	}{
+		{"legacy publicKey", map[string]string{"publicKey": key}},
+		{"password", map[string]string{"password": key}},
+		{"password takes precedence", map[string]string{"publicKey": "ignored", "password": key}},
+		{"empty password falls back", map[string]string{"publicKey": key, "password": ""}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.settings["serverName"] = "example.com"
+			tc.settings["fingerprint"] = "firefox"
+			outbound := map[string]interface{}{
+				"protocol": "vless", "tag": "reality-test",
+				"settings": map[string]interface{}{
+					"id":      "00000000-0000-0000-0000-000000000000",
+					"address": "example.com", "port": 443,
+					"encryption": "none", "flow": "xtls-rprx-vision",
+				},
+				"streamSettings": map[string]interface{}{
+					"network": "raw", "security": "reality", "realitySettings": tc.settings,
+				},
+			}
+			data, err := json.Marshal(map[string]interface{}{"outbounds": []interface{}{outbound}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			parsed, err := NewParser().Parse(string(data))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(parsed.Configs) != 1 {
+				t.Fatalf("expected one proxy, got %d", len(parsed.Configs))
+			}
+			if parsed.Configs[0].PublicKey != key {
+				t.Fatal("REALITY key was lost or alias precedence is incorrect")
+			}
+			kept, err := xray.NewConfigGenerator().GenerateValidatedConfig(parsed.Configs, 10000, filepath.Join(t.TempDir(), "xray.json"), "warning")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(kept) != 1 {
+				t.Fatal("Xray rejected the parsed REALITY outbound")
+			}
+		})
+	}
+}
 
 func TestParseRemnanodeDumpFile(t *testing.T) {
 	dump, err := os.ReadFile("testdata/remnanode-dump.txt")
