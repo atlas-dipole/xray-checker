@@ -124,6 +124,7 @@ func (pc *ProxyConfig) Validate() error {
 // alpn, ...) get distinct IDs. Name/SubName are deliberately excluded so that
 // renaming a server in the panel does NOT change its ID; same-connection configs
 // that differ only by name are separated afterwards by AssignStableIDs.
+// SendThrough is excluded so changing the local source binding preserves the ID.
 func (pc *ProxyConfig) GenerateStableID() string {
 	h := sha256.New()
 	// length-framed components so values containing the delimiter stay unambiguous
@@ -134,10 +135,6 @@ func (pc *ProxyConfig) GenerateStableID() string {
 	write("protocol", pc.Protocol)
 	write("server", pc.Server)
 	write("port", strconv.Itoa(pc.Port))
-	// Preserve existing IDs for proxies without an explicit source binding.
-	if pc.SendThrough != "" {
-		write("sendThrough", pc.SendThrough)
-	}
 
 	// Low-entropy, human-chosen secrets (trojan/shadowsocks password, hysteria auth)
 	// are deliberately NOT hashed: stableID is a PUBLIC identifier (API, badges) and a

@@ -19,26 +19,25 @@ func baseProxy() *ProxyConfig {
 	}
 }
 
-// Every connection-distinguishing field must change the stableID.
+// Remote connection parameters must change the stableID.
 func TestGenerateStableID_DistinguishesConnectionFields(t *testing.T) {
 	base := baseProxy().GenerateStableID()
 	cases := map[string]func(*ProxyConfig){
-		"fp":          func(p *ProxyConfig) { p.Fingerprint = "firefox" },
-		"path":        func(p *ProxyConfig) { p.Path = "/other" },
-		"host":        func(p *ProxyConfig) { p.Host = "h2.example.com" },
-		"shortId":     func(p *ProxyConfig) { p.ShortID = "sid2" },
-		"flow":        func(p *ProxyConfig) { p.Flow = "" },
-		"sni":         func(p *ProxyConfig) { p.SNI = "other.com" },
-		"security":    func(p *ProxyConfig) { p.Security = "tls" },
-		"type":        func(p *ProxyConfig) { p.Type = "ws" },
-		"headerType":  func(p *ProxyConfig) { p.HeaderType = "http" },
-		"encryption":  func(p *ProxyConfig) { p.Encryption = "none" },
-		"server":      func(p *ProxyConfig) { p.Server = "other.com" },
-		"sendThrough": func(p *ProxyConfig) { p.SendThrough = "192.0.2.1" },
-		"port":        func(p *ProxyConfig) { p.Port = 8443 },
-		"uuid":        func(p *ProxyConfig) { p.UUID = "11111111-1111-1111-1111-111111111111" }, // vless route-id: same node, different exit
-		"publicKey":   func(p *ProxyConfig) { p.PublicKey = "PBK2" },
-		"alpn":        func(p *ProxyConfig) { p.ALPN = []string{"h2"} },
+		"fp":         func(p *ProxyConfig) { p.Fingerprint = "firefox" },
+		"path":       func(p *ProxyConfig) { p.Path = "/other" },
+		"host":       func(p *ProxyConfig) { p.Host = "h2.example.com" },
+		"shortId":    func(p *ProxyConfig) { p.ShortID = "sid2" },
+		"flow":       func(p *ProxyConfig) { p.Flow = "" },
+		"sni":        func(p *ProxyConfig) { p.SNI = "other.com" },
+		"security":   func(p *ProxyConfig) { p.Security = "tls" },
+		"type":       func(p *ProxyConfig) { p.Type = "ws" },
+		"headerType": func(p *ProxyConfig) { p.HeaderType = "http" },
+		"encryption": func(p *ProxyConfig) { p.Encryption = "none" },
+		"server":     func(p *ProxyConfig) { p.Server = "other.com" },
+		"port":       func(p *ProxyConfig) { p.Port = 8443 },
+		"uuid":       func(p *ProxyConfig) { p.UUID = "11111111-1111-1111-1111-111111111111" }, // vless route-id: same node, different exit
+		"publicKey":  func(p *ProxyConfig) { p.PublicKey = "PBK2" },
+		"alpn":       func(p *ProxyConfig) { p.ALPN = []string{"h2"} },
 	}
 	for name, mut := range cases {
 		p := baseProxy()
@@ -62,6 +61,17 @@ func TestGenerateStableID_IgnoresNameAndIndex(t *testing.T) {
 		mut(p)
 		if got := p.GenerateStableID(); got != base {
 			t.Errorf("%s must not affect stableID: %s != %s", name, got, base)
+		}
+	}
+}
+
+func TestGenerateStableID_IgnoresSendThrough(t *testing.T) {
+	base := baseProxy().GenerateStableID()
+	for _, source := range []string{"", "192.0.2.1", "192.0.2.2", "2001:db8::1", "192.0.2.0/24"} {
+		p := baseProxy()
+		p.SendThrough = source
+		if got := p.GenerateStableID(); got != base {
+			t.Errorf("sendThrough %q must not affect stableID: %s != %s", source, got, base)
 		}
 	}
 }

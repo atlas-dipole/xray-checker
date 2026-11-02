@@ -50,3 +50,22 @@ func TestIsConfigsEqual_DetectsMetricsLabelChange(t *testing.T) {
 		t.Errorf("different server must be detected as a change")
 	}
 }
+
+func TestIsConfigsEqual_DetectsSendThroughChange(t *testing.T) {
+	for _, labels := range []map[string]string{nil, {"location": "NL"}} {
+		old := trojan("1.1.1.1", labels)
+		for _, source := range []string{"", "192.0.2.1", "2001:db8::1"} {
+			updated := trojan("1.1.1.1", labels)
+			updated.SendThrough = source
+			if old.GenerateStableID() != updated.GenerateStableID() {
+				t.Fatal("sendThrough must not change public stable ID")
+			}
+			if IsConfigsEqual([]*models.ProxyConfig{old}, []*models.ProxyConfig{updated}) != (source == "") {
+				t.Fatalf("incorrect config comparison for sendThrough %q", source)
+			}
+			if !IsConfigsEqual([]*models.ProxyConfig{updated}, []*models.ProxyConfig{updated}) {
+				t.Fatalf("identical source bindings must compare equal: %q", source)
+			}
+		}
+	}
+}

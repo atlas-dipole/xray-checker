@@ -1,6 +1,7 @@
 package xray
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 
@@ -16,11 +17,10 @@ func PrepareProxyConfigs(proxies []*models.ProxyConfig) {
 	models.AssignStableIDs(proxies)
 }
 
-// configSignature combines a proxy's connection-identity hash with a fingerprint
-// of its custom metricsLabels, so a change to labels alone (same connection) is
-// still detected as a subscription change and triggers a refresh (#124).
+// configSignature includes local source binding and custom metrics labels so
+// changes to these fields trigger a refresh without changing the public stable ID.
 func configSignature(cfg *models.ProxyConfig) string {
-	base := cfg.GenerateStableID()
+	base := fmt.Sprintf("%s|sendThrough=%d:%s", cfg.GenerateStableID(), len(cfg.SendThrough), cfg.SendThrough)
 	if len(cfg.MetricsLabels) == 0 {
 		return base
 	}
