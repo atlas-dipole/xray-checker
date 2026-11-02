@@ -12,6 +12,7 @@ import (
 type ProxyConfig struct {
 	Protocol             string
 	Server               string
+	SendThrough          string
 	Port                 int
 	Name                 string
 	Security             string
@@ -133,6 +134,10 @@ func (pc *ProxyConfig) GenerateStableID() string {
 	write("protocol", pc.Protocol)
 	write("server", pc.Server)
 	write("port", strconv.Itoa(pc.Port))
+	// Preserve existing IDs for proxies without an explicit source binding.
+	if pc.SendThrough != "" {
+		write("sendThrough", pc.SendThrough)
+	}
 
 	// Low-entropy, human-chosen secrets (trojan/shadowsocks password, hysteria auth)
 	// are deliberately NOT hashed: stableID is a PUBLIC identifier (API, badges) and a

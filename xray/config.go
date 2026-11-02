@@ -182,6 +182,9 @@ func (g *ConfigGenerator) generateProxyOutbound(proxy *models.ProxyConfig) map[s
 		"tag":      fmt.Sprintf("%s_%d", proxy.Name, proxy.Index),
 		"protocol": proxy.Protocol,
 	}
+	if proxy.SendThrough != "" {
+		outbound["sendThrough"] = proxy.SendThrough
+	}
 
 	switch proxy.Protocol {
 	case "vless":

@@ -1181,6 +1181,7 @@ func (p *Parser) convertOutbound(raw json.RawMessage, index int, originalData ma
 		Index:         index,
 		Name:          baseOutbound.Tag,
 		Protocol:      baseOutbound.Protocol,
+		SendThrough:   baseOutbound.SendThrough,
 		MetricsLabels: sanitizeMetricsLabels(baseOutbound.MetricsLabels),
 	}
 

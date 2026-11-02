@@ -1,8 +1,10 @@
 package subscription
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"net"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -10,7 +12,60 @@ import (
 
 	"xray-checker/models"
 	"xray-checker/xray"
+
+	"github.com/xtls/xray-core/app/proxyman"
+	"github.com/xtls/xray-core/infra/conf/serial"
 )
+
+func TestSendThroughReachesXraySender(t *testing.T) {
+	for _, source := range []string{"", "192.0.2.1", "2001:db8::1", "192.0.2.0/24"} {
+		t.Run("source="+source, func(t *testing.T) {
+			data := `{"outbounds":[{"tag":"proxy","protocol":"vless","sendThrough":"` + source + `","settings":{"address":"example.com","port":443,"id":"00000000-0000-0000-0000-000000000000","encryption":"none"}}]}`
+			parsed, err := NewParser().Parse(data)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(parsed.Configs) != 1 || parsed.Configs[0].SendThrough != source {
+				t.Fatal("parser lost sendThrough")
+			}
+			g := xray.NewConfigGenerator()
+			outbound := g.GenerateProxyOutbound(parsed.Configs[0])
+			if value, exists := outbound["sendThrough"]; exists != (source != "") || (exists && value != source) {
+				t.Fatalf("unexpected generated sendThrough: %v (exists=%v)", value, exists)
+			}
+			generated, err := g.GenerateConfig(parsed.Configs, 10000, "none")
+			if err != nil {
+				t.Fatal(err)
+			}
+			decoded, err := serial.DecodeJSONConfig(bytes.NewReader(generated))
+			if err != nil {
+				t.Fatal(err)
+			}
+			built, err := decoded.Build()
+			if err != nil {
+				t.Fatal(err)
+			}
+			senderMessage, err := built.Outbound[2].SenderSettings.GetInstance()
+			if err != nil {
+				t.Fatal(err)
+			}
+			sender := senderMessage.(*proxyman.SenderConfig)
+			if source == "" {
+				if sender.Via != nil {
+					t.Fatal("source binding unexpectedly enabled")
+				}
+				return
+			}
+			wantIP, wantCIDR := source, ""
+			if source == "192.0.2.0/24" {
+				wantIP, wantCIDR = "192.0.2.0", "24"
+			}
+			if !net.IP(sender.GetVia().GetIp()).Equal(net.ParseIP(wantIP)) || sender.ViaCidr != wantCIDR {
+				t.Fatalf("Xray sender did not retain source binding: %v", sender)
+			}
+		})
+	}
+}
 
 func TestParseRealityKeyAliases(t *testing.T) {
 	const key = "jnsDTya4elAlV-czGFJbvOHJFdXWn7MGGwmKzZ_hoTQ"
