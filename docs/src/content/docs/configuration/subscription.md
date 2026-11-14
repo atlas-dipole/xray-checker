@@ -332,4 +332,17 @@ SUBSCRIPTION_USER_AGENT="Happ/1.0"
 SUBSCRIPTION_HEADERS="X-Token: abc, X-Region: eu"
 ```
 
+In Docker Compose:
+
+```yaml
+environment:
+  SUBSCRIPTION_URL: "https://example.com/subscription"
+  SUBSCRIPTION_USER_AGENT: "Happ/1.0"
+  SUBSCRIPTION_HEADERS: "Authorization: Bearer YOUR_TOKEN, X-Region: eu"
+```
+
+For the CLI, repeat `--subscription-header "Key: Value"` for each header.
+Headers apply to all HTTP subscriptions on initial load and updates.
+They override default headers, including `User-Agent`.
+
 See [`SUBSCRIPTION_USER_AGENT`](/configuration/envs#subscription_user_agent) and [`SUBSCRIPTION_HEADERS`](/configuration/envs#subscription_headers).

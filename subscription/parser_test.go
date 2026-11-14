@@ -4,18 +4,79 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
 
+	"xray-checker/config"
 	"xray-checker/models"
 	"xray-checker/xray"
 
 	"github.com/xtls/xray-core/app/proxyman"
 	"github.com/xtls/xray-core/infra/conf/serial"
 )
+
+func TestShareLinkNamesDoNotBecomeSourceBindings(t *testing.T) {
+	for _, name := range []string{"🇩🇪 Германия #4", "192.0.2.1", "origin"} {
+		t.Run(name, func(t *testing.T) {
+			link := "vless://00000000-0000-0000-0000-000000000000@example.com:443?encryption=none&type=tcp&security=none#" + url.PathEscape(name)
+			parser := NewParser()
+			parsed, err := parser.Parse(link)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, proxies := range [][]*models.ProxyConfig{parsed.Configs, parser.parseLineByLine([]byte(link), nil)} {
+				if len(proxies) != 1 || proxies[0].Name != name || proxies[0].SendThrough != "" {
+					t.Fatalf("expected display name %q without a source binding", name)
+				}
+				g := xray.NewConfigGenerator()
+				survivors, err := g.GenerateValidatedConfig(proxies, 20000, filepath.Join(t.TempDir(), "config.json"), "none")
+				if err != nil || len(survivors) != 1 {
+					t.Fatalf("share-link proxy was rejected: survivors=%d err=%v", len(survivors), err)
+				}
+			}
+		})
+	}
+}
+
+func TestSubscriptionRequestHeaders(t *testing.T) {
+	saved := config.CLIConfig
+	t.Cleanup(func() { config.CLIConfig = saved })
+	for _, jsonFormat := range []bool{false, true} {
+		t.Run(fmt.Sprintf("json=%v", jsonFormat), func(t *testing.T) {
+			config.CLIConfig.Subscription.JSONFormat = jsonFormat
+			config.CLIConfig.Subscription.UserAgent = "CustomClient/1.0"
+			config.CLIConfig.Subscription.Headers = []string{
+				"Authorization: Bearer test-token", "X-Token: value:with:colons",
+				"User-Agent: HeaderClient/2.0", "Accept: application/json",
+			}
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				for key, want := range map[string]string{
+					"Authorization": "Bearer test-token", "X-Token": "value:with:colons",
+					"User-Agent": "HeaderClient/2.0", "Accept": "application/json",
+				} {
+					if got := r.Header.Get(key); got != want {
+						t.Errorf("header %s = %q, want %q", key, got, want)
+					}
+				}
+				w.Write([]byte("subscription content"))
+			}))
+			defer server.Close()
+			for range 2 {
+				result, err := NewParser().fetchURLContent(server.URL)
+				if err != nil || string(result.Content) != "subscription content" {
+					t.Fatalf("subscription request failed: %v", err)
+				}
+			}
+		})
+	}
+}
 
 func TestSendThroughReachesXraySender(t *testing.T) {
 	for _, source := range []string{"", "192.0.2.1", "2001:db8::1", "192.0.2.0/24"} {

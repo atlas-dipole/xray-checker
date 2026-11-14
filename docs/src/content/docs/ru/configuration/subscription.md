@@ -332,4 +332,17 @@ SUBSCRIPTION_USER_AGENT="Happ/1.0"
 SUBSCRIPTION_HEADERS="X-Token: abc, X-Region: eu"
 ```
 
+В Docker Compose:
+
+```yaml
+environment:
+  SUBSCRIPTION_URL: "https://example.com/subscription"
+  SUBSCRIPTION_USER_AGENT: "Happ/1.0"
+  SUBSCRIPTION_HEADERS: "Authorization: Bearer YOUR_TOKEN, X-Region: eu"
+```
+
+Для CLI повторяйте `--subscription-header "Key: Value"` для каждого заголовка.
+Заголовки применяются ко всем HTTP-подпискам при первой загрузке и обновлениях.
+Они имеют приоритет над стандартными заголовками, включая `User-Agent`.
+
 См. [`SUBSCRIPTION_USER_AGENT`](/ru/configuration/envs#subscription_user_agent) и [`SUBSCRIPTION_HEADERS`](/ru/configuration/envs#subscription_headers).

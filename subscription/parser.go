@@ -719,6 +719,9 @@ func (p *Parser) extractOutbounds(data json.RawMessage, originalData map[string]
 			continue
 		}
 		if proxyConfig != nil {
+			// libXray stores share-link display names in sendThrough. Only
+			// native JSON outbounds can supply an actual source binding.
+			proxyConfig.SendThrough = ""
 			proxyConfigs = append(proxyConfigs, proxyConfig)
 			configIndex++
 		}
