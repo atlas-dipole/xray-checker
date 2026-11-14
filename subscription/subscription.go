@@ -83,7 +83,7 @@ func ReadFromMultipleSources(urls []string) ([]*models.ProxyConfig, error) {
 		if name != "" {
 			SetSubscriptionName(name)
 		}
-		return configs, nil
+		return xray.DeduplicateProxyConfigs(configs), nil
 	}
 
 	logger.Debug("Fetching %d subscriptions in parallel", len(urls))
@@ -146,7 +146,7 @@ func ReadFromMultipleSources(urls []string) ([]*models.ProxyConfig, error) {
 	}
 
 	logger.Debug("Total: %d proxies from %d/%d subscriptions", len(allConfigs), successCount, len(urls))
-	return allConfigs, nil
+	return xray.DeduplicateProxyConfigs(allConfigs), nil
 }
 
 func ReadFromSource(source string) ([]*models.ProxyConfig, string, error) {

@@ -52,6 +52,9 @@ type ProxyConfig struct {
 	RawFinalMask string
 	SubName      string
 	GroupName    string
+	// FromMultiNodeProfile records source provenance for choosing display names
+	// when a connection also appears as a standalone subscription entry.
+	FromMultiNodeProfile bool
 
 	// MetricsLabels holds operator-defined static labels parsed from a JSON
 	// outbound's "metricsLabels" object. They are exported as extra Prometheus

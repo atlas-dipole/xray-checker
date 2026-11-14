@@ -690,6 +690,7 @@ func nameGroupedProxies(remarks string, group []*models.ProxyConfig) {
 		labelCounts[nodeLabel(pc)]++
 	}
 	for _, pc := range group {
+		pc.FromMultiNodeProfile = true
 		node := nodeLabel(pc)
 		if labelCounts[node] > 1 {
 			node = fmt.Sprintf("%s (%s:%d)", node, pc.Server, pc.Port)

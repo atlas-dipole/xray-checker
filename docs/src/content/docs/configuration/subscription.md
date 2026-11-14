@@ -379,3 +379,13 @@ Headers apply to all HTTP subscriptions on initial load and updates.
 They override default headers, including `User-Agent`.
 
 See [`SUBSCRIPTION_USER_AGENT`](/configuration/envs#subscription_user_agent) and [`SUBSCRIPTION_HEADERS`](/configuration/envs#subscription_headers).
+
+## Duplicate connections
+
+Identical generated outbounds within a subscription are checked once, including
+connections repeated across SMART groups. A standalone node's name takes priority
+over aliases inside multi-node profiles, regardless of their order. If there is
+no standalone entry, the first name and group are retained.
+Credentials, transport, SNI and finalmask settings participate in the comparison.
+Different subscriptions and different `metricsLabels` remain separate. The log
+reports how many duplicates were removed on initial load and refresh.
