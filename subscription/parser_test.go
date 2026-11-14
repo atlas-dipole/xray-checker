@@ -25,7 +25,7 @@ import (
 func TestShareLinkNamesDoNotBecomeSourceBindings(t *testing.T) {
 	for _, name := range []string{"🇩🇪 Германия #4", "192.0.2.1", "origin"} {
 		t.Run(name, func(t *testing.T) {
-			link := "vless://00000000-0000-0000-0000-000000000000@example.com:443?encryption=none&type=tcp&security=none#" + url.PathEscape(name)
+			link := "vless://00000000-0000-0000-0000-000000000000@127.0.0.1:443?encryption=none&type=tcp&security=none#" + url.PathEscape(name)
 			parser := NewParser()
 			parsed, err := parser.Parse(link)
 			if err != nil {
@@ -81,7 +81,7 @@ func TestSubscriptionRequestHeaders(t *testing.T) {
 func TestSendThroughReachesXraySender(t *testing.T) {
 	for _, source := range []string{"", "192.0.2.1", "2001:db8::1", "192.0.2.0/24"} {
 		t.Run("source="+source, func(t *testing.T) {
-			data := `{"outbounds":[{"tag":"proxy","protocol":"vless","sendThrough":"` + source + `","settings":{"address":"example.com","port":443,"id":"00000000-0000-0000-0000-000000000000","encryption":"none"}}]}`
+			data := `{"outbounds":[{"tag":"proxy","protocol":"vless","sendThrough":"` + source + `","settings":{"address":"127.0.0.1","port":443,"id":"00000000-0000-0000-0000-000000000000","encryption":"none"}}]}`
 			parsed, err := NewParser().Parse(data)
 			if err != nil {
 				t.Fatal(err)

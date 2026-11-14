@@ -91,6 +91,11 @@ func TestGenerateStableID_ExcludesSecrets(t *testing.T) {
 	if hy.GenerateStableID() != hy2.GenerateStableID() {
 		t.Errorf("hysteria auth (secret) must not affect stableID")
 	}
+	hy.RawFinalMask = `{"udp":[{"type":"salamander","settings":{"password":"first"}}]}`
+	hy2.RawFinalMask = `{"udp":[{"type":"salamander","settings":{"password":"second"}}]}`
+	if hy.GenerateStableID() != hy2.GenerateStableID() {
+		t.Error("finalmask credentials must not affect public stableID")
+	}
 }
 
 func TestGenerateStableID_AlpnOrderIndependent(t *testing.T) {

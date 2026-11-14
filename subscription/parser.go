@@ -18,7 +18,8 @@ import (
 	"xray-checker/logger"
 	"xray-checker/models"
 
-	libXray "github.com/xtls/libxray"
+	"github.com/xtls/libxray/share"
+	"github.com/xtls/xray-core/infra/conf"
 )
 
 const (
@@ -40,11 +41,6 @@ type fetchResult struct {
 
 func NewParser() *Parser {
 	return &Parser{}
-}
-
-type libXrayResponse struct {
-	Success bool            `json:"success"`
-	Data    json.RawMessage `json:"data"`
 }
 
 type libXrayOutbound struct {
@@ -87,7 +83,7 @@ type libXrayStreamSettings struct {
 	KcpSettings         json.RawMessage             `json:"kcpSettings"`
 	HysteriaSettings    *libXrayHysteriaSettings    `json:"hysteriaSettings"`
 	Sockopt             *libXraySockopt             `json:"sockopt"`
-	FinalMask           *libXrayFinalMask           `json:"finalMask"`
+	FinalMask           json.RawMessage             `json:"finalMask"`
 }
 
 type libXrayTlsSettings struct {
@@ -154,39 +150,7 @@ type libXrayHysteriaSettings struct {
 }
 
 type libXraySockopt struct {
-	FinalMask *libXrayFinalMask `json:"finalMask"`
-}
-
-type libXrayFinalMask struct {
-	QuicParams *libXrayQuicParams `json:"quicParams"`
-	Udp        []libXrayMask      `json:"udp"`
-}
-
-type libXrayQuicParams struct {
-	Congestion string         `json:"congestion"`
-	BrutalUp   string         `json:"brutalUp"`
-	BrutalDown string         `json:"brutalDown"`
-	UdpHop     *libXrayUdpHop `json:"udpHop"`
-}
-
-type libXrayUdpHop struct {
-	// libXray serializes xray-core's conf.UdpHop, whose port list key is "ports".
-	PortList json.RawMessage    `json:"ports"`
-	Interval *libXrayInt32Range `json:"interval"`
-}
-
-type libXrayInt32Range struct {
-	From int32 `json:"from"`
-	To   int32 `json:"to"`
-}
-
-type libXrayMask struct {
-	Type     string           `json:"type"`
-	Settings *json.RawMessage `json:"settings"`
-}
-
-type libXraySalamander struct {
-	Password string `json:"password"`
+	FinalMask json.RawMessage `json:"finalMask"`
 }
 
 type originalLinkData struct {
@@ -623,28 +587,12 @@ func parseProxyURI(line string) *models.ProxyConfig {
 // parseViaLibXray attempts to parse all configs at once via libXray.
 // Returns parsed configs or nil if parsing fails.
 func (p *Parser) parseViaLibXray(cleanedData []byte, originalData map[string]*originalLinkData) []*models.ProxyConfig {
-	base64Data := base64.StdEncoding.EncodeToString(cleanedData)
-
-	resultBase64 := libXray.ConvertShareLinksToXrayJson(base64Data)
-
-	resultBytes, err := base64.StdEncoding.DecodeString(resultBase64)
+	data, err := share.ConvertShareLinksToXrayJson(string(cleanedData), "")
 	if err != nil {
-		logger.Debug("Failed to decode libXray response: %v", err)
+		logger.Debug("libXray batch parsing failed: %v", err)
 		return nil
 	}
-
-	var response libXrayResponse
-	if err := json.Unmarshal(resultBytes, &response); err != nil {
-		logger.Debug("Failed to parse libXray response: %v", err)
-		return nil
-	}
-
-	if !response.Success {
-		logger.Debug("libXray batch parsing returned success=false")
-		return nil
-	}
-
-	return p.extractOutbounds(response.Data, originalData)
+	return p.extractOutbounds(data, originalData)
 }
 
 // parseLineByLine parses each config line individually, skipping broken ones.
@@ -659,30 +607,14 @@ func (p *Parser) parseLineByLine(cleanedData []byte, originalData map[string]*or
 			continue
 		}
 
-		lineBase64 := base64.StdEncoding.EncodeToString([]byte(line))
-		resultBase64 := libXray.ConvertShareLinksToXrayJson(lineBase64)
-
-		resultBytes, err := base64.StdEncoding.DecodeString(resultBase64)
+		data, err := share.ConvertShareLinksToXrayJson(line, "")
 		if err != nil {
-			logger.Warn("Skipping invalid config line (decode error): %.50s...", line)
+			logger.Warn("Skipping invalid config line (libXray error)")
 			skippedCount++
 			continue
 		}
 
-		var response libXrayResponse
-		if err := json.Unmarshal(resultBytes, &response); err != nil {
-			logger.Warn("Skipping invalid config line (parse error): %.50s...", line)
-			skippedCount++
-			continue
-		}
-
-		if !response.Success {
-			logger.Warn("Skipping invalid config line (libXray error): %.50s...", line)
-			skippedCount++
-			continue
-		}
-
-		configs := p.extractOutbounds(response.Data, originalData)
+		configs := p.extractOutbounds(data, originalData)
 		allConfigs = append(allConfigs, configs...)
 	}
 
@@ -1395,40 +1327,40 @@ func (p *Parser) convertOutbound(raw json.RawMessage, index int, originalData ma
 			}
 		}
 
-		// Extract QuicParams and Salamander from FinalMask
-		// FinalMask can be at streamSettings level or inside sockopt
-		finalMask := ss.FinalMask
-		if finalMask == nil && ss.Sockopt != nil {
-			finalMask = ss.Sockopt.FinalMask
+		// Preserve the full block for Xray to validate and build. Older clients
+		// put finalmask inside sockopt; emit it at streamSettings level instead.
+		rawMask := ss.FinalMask
+		if (len(rawMask) == 0 || string(rawMask) == "null") && ss.Sockopt != nil {
+			rawMask = ss.Sockopt.FinalMask
 		}
-		if finalMask != nil {
-			if finalMask.QuicParams != nil {
-				qp := finalMask.QuicParams
-				pc.HysteriaUp = qp.BrutalUp
-				pc.HysteriaDown = qp.BrutalDown
-				if qp.UdpHop != nil {
-					if qp.UdpHop.PortList != nil {
-						var ports string
-						if err := json.Unmarshal(qp.UdpHop.PortList, &ports); err == nil {
-							pc.HysteriaPorts = ports
-						} else {
-							logger.Debug("Failed to parse UdpHop portList as string: %v", err)
-						}
-					}
-					if qp.UdpHop.Interval != nil {
-						pc.HysteriaHopInterval = qp.UdpHop.Interval.From
-					}
-				}
+		if len(rawMask) > 0 && string(rawMask) != "null" {
+			pc.RawFinalMask = string(rawMask)
+		}
+		// Extract Hysteria metadata with the same schema the bundled core uses.
+		// Keep the raw block even if metadata decoding fails: core validation will
+		// reject invalid masks rather than silently remove their settings.
+		var finalMask conf.FinalMask
+		if json.Unmarshal(rawMask, &finalMask) == nil {
+			if qp := finalMask.QuicParams; qp != nil {
+				pc.HysteriaUp = string(qp.BrutalUp)
+				pc.HysteriaDown = string(qp.BrutalDown)
 			}
-			if len(finalMask.Udp) > 0 {
-				mask := finalMask.Udp[0]
-				if mask.Type == "salamander" && mask.Settings != nil {
-					pc.HysteriaObfs = "salamander"
-					var sal libXraySalamander
-					if err := json.Unmarshal(*mask.Settings, &sal); err == nil {
+			for _, mask := range finalMask.Udp {
+				if mask.Settings == nil {
+					continue
+				}
+				switch mask.Type {
+				case "salamander":
+					var sal conf.Salamander
+					if json.Unmarshal(*mask.Settings, &sal) == nil {
+						pc.HysteriaObfs = "salamander"
 						pc.HysteriaObfsPassword = sal.Password
-					} else {
-						logger.Debug("Failed to parse salamander settings: %v", err)
+					}
+				case "udphop":
+					var hop conf.UDPHop
+					if json.Unmarshal(*mask.Settings, &hop) == nil {
+						pc.HysteriaPorts = hop.RemotePorts.String()
+						pc.HysteriaHopInterval = hop.Interval.From
 					}
 				}
 			}

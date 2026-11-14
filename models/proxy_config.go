@@ -47,8 +47,11 @@ type ProxyConfig struct {
 	StableID             string
 	RawXhttpSettings     string
 	RawKcpSettings       string
-	SubName              string
-	GroupName            string
+	// RawFinalMask preserves the complete Xray mask chain, including credentials.
+	// It is excluded from the public stableID, like other low-entropy secrets.
+	RawFinalMask string
+	SubName      string
+	GroupName    string
 
 	// MetricsLabels holds operator-defined static labels parsed from a JSON
 	// outbound's "metricsLabels" object. They are exported as extra Prometheus

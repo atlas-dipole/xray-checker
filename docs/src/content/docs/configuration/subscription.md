@@ -323,6 +323,39 @@ Docker CLI is included in the Checker image. Socket access permits control of th
 
 Both sources use `SUBSCRIPTION_UPDATE` (default `true`) and `SUBSCRIPTION_UPDATE_INTERVAL` (default `300` seconds). Updates reread the file or rerun the command. Combine sources by repeating `--subscription-url`. Proxies are checked individually, as with regular JSON configs.
 
+## FinalMask and TLS fingerprints
+
+Checker uses Xray-core 26.11.9. The `chrome` fingerprint uses Chrome 155;
+the explicit name `hellochrome_155` is also supported.
+
+The complete `streamSettings.finalmask` block from JSON subscriptions is preserved,
+including TCP and UDP mask order, each mask's settings, and `quicParams`.
+For example, TLS ClientHello fragmentation:
+
+```json
+{
+  "streamSettings": {
+    "network": "tcp",
+    "security": "tls",
+    "tlsSettings": { "fingerprint": "chrome" },
+    "finalmask": {
+      "tcp": [
+        {
+          "type": "fragment",
+          "settings": { "packets": "tlshello", "length": "100-200", "delay": "1-3" }
+        }
+      ]
+    }
+  }
+}
+```
+
+Share links support the `fm` parameter containing URL-encoded `finalmask` JSON.
+Hysteria2 obfuscation and port-hopping parameters become Salamander and `udphop`
+masks. Legacy `sockopt.finalMask` blocks are read and emitted at
+`streamSettings.finalmask`. The bundled core validates masks; nodes with unsupported
+or invalid settings are excluded with a log message.
+
 ## Custom Request Headers
 
 Panels that gate the subscription behind a token or a specific client can be satisfied with a custom `User-Agent` and arbitrary headers:

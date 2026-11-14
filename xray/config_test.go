@@ -10,7 +10,21 @@ import (
 	"xray-checker/models"
 
 	"github.com/xtls/xray-core/infra/conf/serial"
+	xtlstls "github.com/xtls/xray-core/transport/internet/tls"
 )
+
+func TestChromeFingerprintUsesChrome155(t *testing.T) {
+	for _, name := range []string{"chrome", "hellochrome_155"} {
+		fp := xtlstls.GetFingerprint(name)
+		if fp == nil || fp.Version != "155" {
+			t.Fatalf("fingerprint %q must resolve to Chrome 155, got %v", name, fp)
+		}
+		buildsWithXrayCore(t, []*models.ProxyConfig{{
+			Protocol: "vless", Server: "example.com", Port: 443, Name: "chrome-155",
+			UUID: "00000000-0000-0000-0000-000000000000", Type: "tcp", Security: "tls", Fingerprint: name,
+		}})
+	}
+}
 
 func TestExtractFailingOutboundTag(t *testing.T) {
 	cases := map[string]string{
@@ -30,7 +44,7 @@ func TestExtractFailingOutboundTag(t *testing.T) {
 // aborting the whole config.
 func TestGenerateValidatedConfigPrunesUnbuildable(t *testing.T) {
 	good := &models.ProxyConfig{
-		Protocol: "vless", Server: "good.example.com", Port: 443, Name: "good",
+		Protocol: "vless", Server: "127.0.0.1", Port: 443, Name: "good",
 		UUID: "00000000-0000-0000-0000-000000000000", Type: "tcp", Security: "none", Index: 0,
 	}
 	bad := &models.ProxyConfig{
@@ -124,25 +138,25 @@ func TestGenerateHysteriaConfigWithObfsAndPortHopping(t *testing.T) {
 		t.Errorf("finalmask must not be placed under sockopt")
 	}
 
-	// Verify port-hopping ports and salamander obfs survived into the schema.
+	// Verify port-hopping ports, interval, and the mask wrapping order.
 	var fm struct {
-		QuicParams *struct {
-			UdpHop *struct {
-				Ports json.RawMessage `json:"ports"`
-			} `json:"udpHop"`
-		} `json:"quicParams"`
 		Udp []struct {
-			Type string `json:"type"`
+			Type     string `json:"type"`
+			Settings struct {
+				Password    string `json:"password"`
+				RemotePorts string `json:"remotePorts"`
+				Interval    int    `json:"interval"`
+			} `json:"settings"`
 		} `json:"udp"`
 	}
 	if err := json.Unmarshal(ss["finalmask"], &fm); err != nil {
 		t.Fatalf("failed to parse finalmask: %v", err)
 	}
-	if fm.QuicParams == nil || fm.QuicParams.UdpHop == nil || len(fm.QuicParams.UdpHop.Ports) == 0 {
-		t.Errorf("expected finalmask.quicParams.udpHop.ports to be set")
+	if len(fm.Udp) != 2 || fm.Udp[0].Type != "salamander" || fm.Udp[1].Type != "udphop" {
+		t.Fatalf("expected salamander then udphop, got %+v", fm.Udp)
 	}
-	if len(fm.Udp) == 0 || fm.Udp[0].Type != "salamander" {
-		t.Errorf("expected finalmask.udp[0].type == salamander, got %+v", fm.Udp)
+	if fm.Udp[0].Settings.Password != "obfs-pass" || fm.Udp[1].Settings.RemotePorts != "20000-50000" || fm.Udp[1].Settings.Interval != 30 {
+		t.Errorf("mask settings lost: %+v", fm.Udp)
 	}
 }
 

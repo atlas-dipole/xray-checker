@@ -4,7 +4,28 @@ import (
 	"testing"
 
 	"xray-checker/config"
+	"xray-checker/models"
+	"xray-checker/xray"
 )
+
+func TestRawFinalMaskCredentialsAreSanitized(t *testing.T) {
+	proxy := &models.ProxyConfig{
+		Protocol: "vless", Server: "example.com", Port: 443,
+		RawFinalMask: `{"udp":[{"type":"salamander","settings":{"password":"mask-secret","packetSize":"100-200"}}]}`,
+	}
+	outbound := xray.NewConfigGenerator().GenerateProxyOutbound(proxy)
+	sanitized := sanitizeGeneratedConfig(outbound)
+	stream := sanitized["streamSettings"].(map[string]interface{})
+	mask := stream["finalmask"].(map[string]interface{})["udp"].([]interface{})[0].(map[string]interface{})
+	settings := mask["settings"].(map[string]interface{})
+	if settings["password"] != "mask...cret" || settings["packetSize"] != "100-200" {
+		t.Fatalf("finalmask credentials were exposed or public settings lost: %v", settings)
+	}
+	original := outbound["streamSettings"].(map[string]interface{})["finalmask"].(map[string]interface{})["udp"].([]interface{})[0].(map[string]interface{})
+	if original["settings"].(map[string]interface{})["password"] != "mask-secret" {
+		t.Fatal("sanitization changed the actual Xray configuration")
+	}
+}
 
 func TestMaskMiddle(t *testing.T) {
 	cases := map[string]string{
